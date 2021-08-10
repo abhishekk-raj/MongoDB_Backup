@@ -1,4 +1,22 @@
+import { S3 } from 'aws-sdk';
 import {blue, green, red, white, yellow} from 'chalk';
+
+export const UploadBackupDataToS3 = (bucketName: string, backupName: string, backupContent: any) => {
+    console.log('Bucket name :: ', bucketName);
+    console.log('Backup name :: ', backupName);
+
+    const s3 = new S3({
+        accessKeyId: process.env.AWS_KEY,
+        secretAccessKey: process.env.AWS_SECRET
+    });
+
+    const params = {
+        Bucket: bucketName,
+        Key: backupName,
+        Body: backupContent
+    };
+    return s3.upload(params).promise();
+};
 
 export const fileName = (): string => {
     const date = new Date();
@@ -36,5 +54,5 @@ export const logger = (messageType: MessageType, message: string, data?: any) =>
             color = white;
     }
 
-    console.log(color(message));
+    console.log(color(message, data));
 };
