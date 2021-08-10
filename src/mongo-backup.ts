@@ -9,6 +9,12 @@ import {fileName, logger, MessageType, UploadBackupDataToS3} from './helpers';
 import SendData = ManagedUpload.SendData;
 import ErrnoException = NodeJS.ErrnoException;
 
+enum BackupEnv {
+    dev = 'dev',
+    stag = 'stag',
+    prod = 'prod'
+}
+
 class MongoBkp {
 
     constructor() {
@@ -25,9 +31,28 @@ class MongoBkp {
     private executeBackupCommands(): void {
         const FILE_NAME = `${fileName()}.gz`;
         const BACKUP_DIR = path.join(__dirname, '../backups', `${FILE_NAME}`);
+        let DB_NAME;
+        let S3_BUCKET_NAME;
+
+        switch (this.BACKUP_TARGET_ENV) {
+            case BackupEnv.dev:
+                DB_NAME = process.env.DB_NAME_LOCAL;
+                S3_BUCKET_NAME = process.env.S3_BUCKET_DB_BACKUP_LOCAL;
+                break;
+
+            case BackupEnv.stag:
+                DB_NAME = process.env.DB_NAME_STAG;
+                S3_BUCKET_NAME = process.env.S3_BUCKET_DB_BACKUP_STAG;
+                break;
+
+            case BackupEnv.prod:
+                DB_NAME = process.env.DB_NAME_PROD;
+                S3_BUCKET_NAME = process.env.S3_BUCKET_DB_BACKUP_PROD;
+                break;
+        }
 
         const backupProcess = spawn('mongodump', [
-            `--db=${process.env.DB_NAME_LOCAL}`,
+            `--db=${DB_NAME}`,
             `--archive=${BACKUP_DIR}`,
             '--gzip'
         ]);
@@ -48,7 +73,7 @@ class MongoBkp {
                     }
 
                     const base64data = Buffer.from(data);
-                    UploadBackupDataToS3(process.env.S3_BUCKET_DB_BACKUP_LOCAL, FILE_NAME, base64data)
+                    UploadBackupDataToS3(S3_BUCKET_NAME, FILE_NAME, base64data)
                         .then((res: SendData) => {
                             logger(MessageType.success, '\n Backup uploaded to S3 successfully', res.Location);
 
@@ -64,6 +89,9 @@ class MongoBkp {
                         logger(MessageType.error, '\n Backup upload failed', error);
                     });
                 });
+
+                // TODO: Remove S3 bucket file older than 10days. Don't delete backup of 1st of every month. Delete only after 12 months
+                // TODO: Send backup confirmation email
             }
         });
     }
@@ -81,7 +109,7 @@ class MongoBkp {
         if (!this.cronJob.running) {
             this.cronJob.start();
         }
-        logger(MessageType.info, 'App Started...');
+        logger(MessageType.info, `Backup server running in ${this.BACKUP_TARGET_ENV} environment`);
     }
 }
 
