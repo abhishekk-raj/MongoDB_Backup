@@ -1,0 +1,22 @@
+{
+  "name": "mongo-backup",
+  "version": "1.0.0",
+  "description": "Take MongoDB backup in some time period",
+  "main": "dist/mongo-backup.js",
+  "scripts": {
+    "mongo-backup:dev": "tsc && node dist/mongo-backup.js --environment=dev",
+    "mongo-backup:stag": "tsc && node dist/mongo-backup.js --environment=stag",
+    "mongo-backup:prod": "tsc && node dist/mongo-backup.js --environment=prod"
+  },
+  "keywords": [
+    "MongoDB",
+    "MongoDB Backup",
+    "Backup Database"
+  ],
+  "author": "Abhishek Raj",
+  "license": "ISC",
+  "devDependencies": {
+    "tslint": "6.1.3",
+    "typescript": "4.3.5"
+  }
+}
